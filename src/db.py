@@ -15,7 +15,7 @@ host = getenv('HOST')
 url = f'postgresql://{username}:{password}@{domain}:{host}/{db_name}'
 
 Base = declarative_base()
-engine = create_engine(url, echo=True, pool_size=5)
+engine = create_engine(url, echo=False, pool_size=5)
 
 DBSession = sessionmaker(bind=engine)
 session = DBSession()

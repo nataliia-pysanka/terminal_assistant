@@ -1,8 +1,9 @@
 import argparse
 import sys
 from sqlalchemy.exc import SQLAlchemyError
-from src.repository import get_groups, get_contact, get_contacts, add_group, \
-    get_group, create_contact, remove_contact, update_contact
+from src.repository import get_groups, get_contacts, add_group, \
+    get_group, create_contact, remove_contact, update_contact, \
+    get_contact_by_name, get_contact_by_birth, get_contact_by_groups
 import re
 from datetime import datetime
 from src.models import Contact
@@ -12,11 +13,20 @@ from src.seed import seed_groups, seed_contacts
 
 parser = argparse.ArgumentParser(description='ContactBook APP')
 parser.add_argument('--action', '-a',
-                   help='Command: create, update, search, list, remove, birth')
+                   help='Command: create, update, list, remove')
+parser.add_argument('--search', '-s',
+                   help='Command: name, birth, groups')
+parser.add_argument('--date',
+                    nargs='?',
+                    const=datetime.now().strftime("%d.%m.%Y"),
+                    type=str)
+
 arguments = parser.parse_args()
 my_arg = vars(arguments)
 
 action = my_arg.get('action')
+search = my_arg.get('search')
+birthday = my_arg.get('date')
 
 
 def input_name(text: str):
@@ -167,13 +177,37 @@ def update():
     return {}
 
 
-def search():
-    search_word = input('Input argument=value > ')
+def search_name():
     first_name = input('Input first name > ')
     last_name = input('Input last name > ')
-    contacts = get_contact(first_name=first_name, last_name=last_name)
-    for item in contacts:
-        print_contact(item)
+    contacts = get_contact_by_name(first_name=first_name, last_name=last_name)
+    if contacts:
+        for item in contacts:
+            print_contact(item)
+    else:
+        print('Not found')
+
+
+def search_birth():
+    birth = input("Input birthday date in format '%d.%m.%Y' > ")
+    if not birth:
+        birth = datetime.now().strftime("%d.%m.%Y")
+    contacts = get_contact_by_birth(day=birth)
+    if contacts:
+        for item in contacts:
+            print_contact(item)
+    else:
+        print('Not found')
+
+
+def search_group():
+    group_name = input("Input group name > ")
+    group = get_contact_by_groups(group=group_name)
+    if group:
+        for item in group.contacts:
+            print_contact(item)
+    else:
+        print('Not found')
 
 
 def list_all():
@@ -186,33 +220,45 @@ def remove():
     return {}
 
 
-def birth():
-    return {}
+def birth_on_date():
+    print(type(action.date))
 
 
-def main():
+def action_scope():
     match action:
         case 'create':
             create()
-        case 'update':
-            update()
-        case 'search':
-            search()
+        # case 'update':
+        #     update()
         case 'list':
             list_all()
-        case 'remove':
-            remove()
-        case 'birth':
-            birth()
+        # case 'remove':
+        #     remove()
         case _:
             print("Error: Incorrect inputted data")
+
+
+def search_scope():
+    match search:
+        case 'name':
+            search_name()
+        case 'birth':
+            search_birth()
+        case 'group':
+            search_group()
 
 
 if __name__ == '__main__':
     try:
         # seed_groups()
         # seed_contacts()
-        main()
+        # main()
+        if action:
+            action_scope()
+        elif search:
+            search_scope()
+        elif birthday:
+            birth_on_date()
     except SQLAlchemyError as err:
         print(err)
 
