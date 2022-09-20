@@ -12,6 +12,8 @@ __pycache__
 myvenv/
 venv/
 menv/
+Pipfile
+Pipfile.lock
 
 # Database
 db.sqlite3
