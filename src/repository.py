@@ -5,14 +5,37 @@ from src.db import session
 from src.models import Group, Contact, Phone, Email, ContactGroup
 from typing import List
 from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime
 
 
-def get_contact(first_name: str = None, last_name: str = None) -> Contact:
+def get_contact_by_name(first_name: str = None,
+                        last_name: str = None) -> List[Contact]:
     contacts = session.query(Contact).filter(
         and_(Contact.first_name == first_name,
-             Contact.last_name == last_name)).all()
+             Contact.last_name == last_name)).\
+                                    options(joinedload('groups'),
+                                            joinedload('phones'),
+                                            joinedload('emails')).all()
 
     return contacts
+
+
+def get_contact_by_birth(day: str = datetime.now().strftime("%d.%m.%Y")) \
+        -> List[Contact]:
+    contacts = session.query(Contact).filter(
+        Contact.birth == datetime.strptime(day, "%d.%m.%Y")).\
+                                    options(joinedload('groups'),
+                                            joinedload('phones'),
+                                            joinedload('emails')).all()
+
+    return contacts
+
+
+def get_contact_by_groups(group: str) -> List[Contact]:
+    group = session.query(Group).filter(Group.name == group).\
+                                      options(joinedload('contacts')).one()
+
+    return group
 
 
 def get_contacts() -> List[Contact]:
