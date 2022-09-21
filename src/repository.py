@@ -71,7 +71,42 @@ def get_contacts_joined() -> List[Contact]:
     return contacts
 
 
-# def set_joined_fields(**kwargs):
+def create_joined_phones(contact: Contact, **kwargs):
+    if kwargs.get('phones'):
+        for phone in kwargs['phones']:
+            session.add(Phone(phone=phone, contact_id=contact.id))
+            session.commit()
+
+
+def create_joined_emails(contact: Contact, **kwargs):
+    if kwargs.get('emails'):
+        for email in kwargs['emails']:
+            session.add(Email(email=email, contact_id=contact.id))
+            session.commit()
+
+
+def create_joined_groups(contact: Contact, **kwargs):
+    if kwargs.get('groups'):
+        for group in kwargs['groups']:
+            session.add(
+                ContactGroup(group_id=group, contact_id=contact.id))
+            session.commit()
+
+
+def delete_joined_phones(contact: Contact):
+    session.query(Phone).filter(Phone.contact_id == contact.id).delete()
+    session.commit()
+
+
+def delete_joined_emails(contact: Contact):
+    session.query(Email).filter(Email.contact_id == contact.id).delete()
+    session.commit()
+
+
+def delete_joined_groups(contact: Contact):
+    session.query(Group).filter(Group.contact_id == contact.id).delete()
+    session.commit()
+
 
 def create_contact(**kwargs) -> Contact:
     contact = Contact(
@@ -83,35 +118,42 @@ def create_contact(**kwargs) -> Contact:
     session.add(contact)
     session.commit()
 
-    if kwargs.get('phones'):
-        for phone in kwargs['phones']:
-            session.add(Phone(phone=phone, contact_id=contact.id))
-            session.commit()
-    if kwargs.get('emails'):
-        for email in kwargs['emails']:
-            session.add(Email(email=email, contact_id=contact.id))
-            session.commit()
-    if kwargs.get('groups'):
-        for group in kwargs['groups']:
-            session.add(
-                ContactGroup(group_id=group, contact_id=contact.id))
-            session.commit()
+    create_joined_phones(contact, **kwargs)
+    create_joined_emails(contact, **kwargs)
+    create_joined_groups(contact, **kwargs)
+
     session.refresh(contact)
     session.close()
 
 
 def update_contact(contact: Contact, **kwargs) -> Contact:
-    try:
-        for field in kwargs:
-            print(getattr(contact, field))
-            # setattr(contact, field, kwargs[field])
-    except AttributeError:
-        print('Cant update')
-        return None
-    # contact.update(kwargs)
-    session.add(contact)
-    session.commit()
+    if kwargs.get('first_name'):
+        contact.first_name = kwargs['first_name']
+        session.commit()
+    if kwargs.get('last_name'):
+        contact.last_name = kwargs['last_name']
+        session.commit()
+    if kwargs.get('adress'):
+        contact.adress = kwargs['adress']
+        session.commit()
+    if kwargs.get('birth'):
+        contact.birth = kwargs['birth']
+        session.commit()
+
+    if kwargs.get('phones'):
+        delete_joined_phones(contact)
+        create_joined_phones(contact, **kwargs)
+
+    if kwargs.get('emails'):
+        delete_joined_emails(contact)
+        create_joined_emails(contact, **kwargs)
+
+    if kwargs.get('groups'):
+        delete_joined_groups(contact)
+        create_joined_groups(contact, **kwargs)
+
     session.refresh(contact)
+    session.close()
     return contact
 
 
