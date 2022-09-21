@@ -1,6 +1,7 @@
 from src.repository import create_contact, add_group, get_groups
 from faker import Faker
 from random import randint, choices
+from datetime import datetime
 
 fake = Faker()
 
@@ -19,7 +20,8 @@ def seed_contacts():
         phones = [fake.msisdn() for _ in range(randint(1, 3))]
         emails = [fake.email() for _ in range(randint(0, 2))]
         adress = fake.address().replace('\n', ' ')
-        birth = fake.date_between(start_date='-60y', end_date='-18y')
+        birth = fake.date(pattern='%d-%m-%Y', end_datetime='-18y')
+        birth = datetime.strptime(birth, '%d-%m-%Y')
         groups = choices(groups_id, k=randint(0, 2))
         create_contact(first_name=first_name,
                        last_name=last_name,

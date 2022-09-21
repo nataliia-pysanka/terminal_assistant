@@ -1,4 +1,4 @@
-from sqlalchemy import and_
+from sqlalchemy import and_, extract
 from sqlalchemy.orm import joinedload
 
 from src.db import session
@@ -8,37 +8,62 @@ from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 
 
-def get_contact_by_name(first_name: str = None,
+def get_contacts(first_name: str = None,
+                 last_name: str = None) -> List[Contact]:
+    contacts = session.query(Contact).filter(
+        and_(Contact.first_name == first_name,
+             Contact.last_name == last_name)).all()
+    return contacts
+
+
+def get_contact_by_id(contact_id: int) -> Contact:
+    contact = session.query(Contact).filter(
+             Contact.id == contact_id).one()
+    return contact
+
+
+def get_contacts_by_name(first_name: str = None,
                         last_name: str = None) -> List[Contact]:
     contacts = session.query(Contact).filter(
         and_(Contact.first_name == first_name,
-             Contact.last_name == last_name)).\
-                                    options(joinedload('groups'),
-                                            joinedload('phones'),
-                                            joinedload('emails')).all()
+             Contact.last_name == last_name)). \
+        options(joinedload('groups'),
+                joinedload('phones'),
+                joinedload('emails')).all()
 
     return contacts
 
 
-def get_contact_by_birth(day: str = datetime.now().strftime("%d.%m.%Y")) \
+def get_contact_by_birth(day: datetime) \
         -> List[Contact]:
     contacts = session.query(Contact).filter(
-        Contact.birth == datetime.strptime(day, "%d.%m.%Y")).\
-                                    options(joinedload('groups'),
-                                            joinedload('phones'),
-                                            joinedload('emails')).all()
+        Contact.birth == day). \
+        options(joinedload('groups'),
+                joinedload('phones'),
+                joinedload('emails')).all()
+
+    return contacts
+
+
+def get_contact_by_date(day: int, month: int) -> List[Contact]:
+    contacts = session.query(Contact).filter(
+        and_(extract('month', Contact.birth) == month,
+             extract('day', Contact.birth) == day)). \
+        options(joinedload('groups'),
+                joinedload('phones'),
+                joinedload('emails')).all()
 
     return contacts
 
 
 def get_contact_by_groups(group: str) -> List[Contact]:
-    group = session.query(Group).filter(Group.name == group).\
-                                      options(joinedload('contacts')).one()
+    group = session.query(Group).filter(Group.name == group). \
+        options(joinedload('contacts')).one()
 
     return group
 
 
-def get_contacts() -> List[Contact]:
+def get_contacts_joined() -> List[Contact]:
     contacts = session.query(Contact).options(joinedload('groups'),
                                               joinedload('phones'),
                                               joinedload('emails')).all()
@@ -46,55 +71,54 @@ def get_contacts() -> List[Contact]:
     return contacts
 
 
+# def set_joined_fields(**kwargs):
+
 def create_contact(**kwargs) -> Contact:
-    try:
-        contact = Contact(
-            first_name=kwargs['first_name'],
-            last_name=kwargs['last_name'],
-            adress=kwargs['adress'],
-            birth=kwargs['birth'])
+    contact = Contact(
+        first_name=kwargs['first_name'],
+        last_name=kwargs['last_name'],
+        adress=kwargs['adress'],
+        birth=kwargs['birth'])
 
-        session.add(contact)
-        session.commit()
+    session.add(contact)
+    session.commit()
 
-        if kwargs.get('phones'):
-            for phone in kwargs['phones']:
-                session.add(Phone(phone=phone, contact_id=contact.id))
-                session.commit()
-        if kwargs.get('emails'):
-            for email in kwargs['emails']:
-                session.add(Email(email=email, contact_id=contact.id))
-                session.commit()
-        if kwargs.get('groups'):
-            for group in kwargs['groups']:
-                session.add(
-                    ContactGroup(group_id=group, contact_id=contact.id))
-                session.commit()
-    except SQLAlchemyError as err:
-        print(err)
-        session.rollback()
+    if kwargs.get('phones'):
+        for phone in kwargs['phones']:
+            session.add(Phone(phone=phone, contact_id=contact.id))
+            session.commit()
+    if kwargs.get('emails'):
+        for email in kwargs['emails']:
+            session.add(Email(email=email, contact_id=contact.id))
+            session.commit()
+    if kwargs.get('groups'):
+        for group in kwargs['groups']:
+            session.add(
+                ContactGroup(group_id=group, contact_id=contact.id))
+            session.commit()
+    session.refresh(contact)
     session.close()
-    return contact
 
 
 def update_contact(contact: Contact, **kwargs) -> Contact:
     try:
         for field in kwargs:
-            setattr(contact, field, kwargs[field])
+            print(getattr(contact, field))
+            # setattr(contact, field, kwargs[field])
     except AttributeError:
+        print('Cant update')
         return None
-
+    # contact.update(kwargs)
     session.add(contact)
     session.commit()
     session.refresh(contact)
     return contact
 
 
-def remove_contact(contact: Contact) -> int:
-    contact.delete()
+def remove_contact(contact_id: int):
+    session.query(Contact).filter(Contact.id == contact_id).delete()
     session.commit()
     session.close()
-    return contact
 
 
 def get_groups() -> List[Group]:
