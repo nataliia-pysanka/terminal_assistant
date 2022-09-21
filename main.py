@@ -3,11 +3,11 @@ import sys
 from sqlalchemy.exc import SQLAlchemyError
 from src.repository import get_groups, get_contacts, add_group, \
     get_group, create_contact, remove_contact, update_contact, \
-    get_contact_by_name, get_contact_by_birth, get_contact_by_groups
+    get_contacts_by_name, get_contact_by_birth, get_contact_by_groups, \
+    get_contact_by_date, get_contacts_joined, get_contact_by_id
 import re
 from datetime import datetime
 from src.models import Contact
-from src.db import session
 from src.seed import seed_groups, seed_contacts
 
 
@@ -15,10 +15,11 @@ parser = argparse.ArgumentParser(description='ContactBook APP')
 parser.add_argument('--action', '-a',
                    help='Command: create, update, list, remove')
 parser.add_argument('--search', '-s',
-                   help='Command: name, birth, groups')
-parser.add_argument('--date',
+                   help='Command: name, date, groups')
+parser.add_argument('--birth',
+                    '-b',
                     nargs='?',
-                    const=datetime.now().strftime("%d.%m.%Y"),
+                    const=datetime.now().strftime("%d.%m"),
                     type=str)
 
 arguments = parser.parse_args()
@@ -123,14 +124,14 @@ def print_contact(item: Contact):
         print('\t', item.adress)
     if item.birth:
         print('BIRTH:')
-        print('\t', item.birth.strftime("%m.%d.%Y"))
+        print('\t', item.birth.strftime("%d.%m.%Y"))
     if item.groups:
         lst = [group.name for group in item.groups]
         print(f'GROUPS: {",".join(lst)}')
     print()
 
 
-def create():
+def input_data():
     contact = {}
     first_name = input_name('first name')
     if first_name:
@@ -168,19 +169,57 @@ def create():
     else:
         contact['groups'] = []
 
-    res = create_contact(**contact)
-    if res:
-        print_contact(res)
+    return contact
+
+
+def create():
+    contact = input_data()
+    create_contact(**contact)
+
+
+def get_list_by_name():
+    first_name = input('Input first name > ')
+    last_name = input('Input last name > ')
+    contacts = get_contacts(first_name=first_name, last_name=last_name)
+
+    if not contacts:
+        print('Not found')
+        return None
+    return contacts
+
+
+def clear_dict(dictionary: dict):
+    key_lst = [key for key in dictionary if not dictionary[key]]
+
+    for key in key_lst:
+        del dictionary[key]
+
+    return dictionary
 
 
 def update():
-    return {}
+    contacts = get_list_by_name()
+
+    if not contacts:
+        return
+
+    for contact in contacts:
+        print_contact(contact)
+        while True:
+            button = input('Continue editing this contact ? (Y/n)')
+            if button == 'Y':
+                new_data = input_data()
+                new_data = clear_dict(new_data)
+                update_contact(contact, **new_data)
+                break
+            elif button == 'n':
+                break
 
 
 def search_name():
     first_name = input('Input first name > ')
     last_name = input('Input last name > ')
-    contacts = get_contact_by_name(first_name=first_name, last_name=last_name)
+    contacts = get_contacts_by_name(first_name=first_name, last_name=last_name)
     if contacts:
         for item in contacts:
             print_contact(item)
@@ -188,11 +227,38 @@ def search_name():
         print('Not found')
 
 
-def search_birth():
-    birth = input("Input birthday date in format '%d.%m.%Y' > ")
-    if not birth:
-        birth = datetime.now().strftime("%d.%m.%Y")
-    contacts = get_contact_by_birth(day=birth)
+def get_date(str_date: str):
+    """
+    Parses the inputted string and returns datetime object
+    """
+    date_formats = ['%d-%m', '%d/%m', '%d%m', '%d %m', '%d.%m',
+                    '%d-%m-%Y', '%d/%m/%Y', '%d%m%Y', '%d %m %Y', '%d.%m.%Y',
+                    '%d-%b-%Y', '%d/%b/%Y', '%d%b%Y', '%d %b %Y', '%d.%b.%Y',
+                    '%d-%B-%Y', '%d/%B/%Y', '%d%B%Y', '%d %B %Y', '%d.%b.%Y',
+                    '%d-%m-%y', '%d/%m/%y', '%d%m%y', '%d %m %y', '%d.%m.%y',
+                    '%d-%b-%y', '%d/%b/%y', '%d%b%y', '%d %b %y', '%d.%b.%y',
+                    '%d-%B-%y', '%d/%B/%y', '%d%B%y', '%d %B %y', '%d.%b.%y']
+
+    if str_date is None:
+        return datetime.now()
+
+    for d_f in date_formats:
+        try:
+            date_ = datetime.strptime(str_date, d_f)
+            return date_
+        except ValueError:
+            continue
+    return datetime.now()
+
+
+def search_date():
+    date = input('Input date and month (year if necessary)" > ')
+    date = get_date(date)
+    if date.year == 1900:
+        contacts = get_contact_by_date(day=date.day, month=date.month)
+    else:
+        birth = datetime(day=date.day, month=date.month, year=date.year)
+        contacts = get_contact_by_birth(day=birth)
     if contacts:
         for item in contacts:
             print_contact(item)
@@ -211,29 +277,50 @@ def search_group():
 
 
 def list_all():
-    contacts = get_contacts()
+    contacts = get_contacts_joined()
     for item in contacts:
         print_contact(item)
 
 
 def remove():
-    return {}
+    contacts = get_list_by_name()
+    contacts = [contact.id for contact in contacts]
+    if not contacts:
+        return
+
+    for contact_id in contacts:
+        contact = get_contact_by_id(contact_id)
+        print_contact(contact)
+        while True:
+            button = input('Are you sure to delete? (Y/n) > ')
+            if button == 'Y':
+                remove_contact(contact.id)
+                break
+            elif button == 'n':
+                break
 
 
 def birth_on_date():
-    print(type(action.date))
+    day = datetime.now().day
+    month = datetime.now().month
+    contacts = get_contact_by_date(day, month)
+    if contacts:
+        for item in contacts:
+            print_contact(item)
+    else:
+        print('No birthdays today')
 
 
 def action_scope():
     match action:
         case 'create':
             create()
-        # case 'update':
-        #     update()
+        case 'update':
+            update()
         case 'list':
             list_all()
-        # case 'remove':
-        #     remove()
+        case 'remove':
+            remove()
         case _:
             print("Error: Incorrect inputted data")
 
@@ -242,25 +329,26 @@ def search_scope():
     match search:
         case 'name':
             search_name()
-        case 'birth':
-            search_birth()
+        case 'date':
+            search_date()
         case 'group':
             search_group()
+        case _:
+            print("Error: Incorrect inputted data")
 
 
 if __name__ == '__main__':
     try:
         # seed_groups()
         # seed_contacts()
-        # main()
         if action:
             action_scope()
-        elif search:
+        if search:
             search_scope()
-        elif birthday:
+        if birthday:
             birth_on_date()
     except SQLAlchemyError as err:
-        print(err)
+        print(f'Error: {err}')
 
     sys.exit()
 
