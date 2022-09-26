@@ -13,6 +13,8 @@ ps:
 	docker-compose ps
 db:
 	docker-compose --env-file ./.env exec db psql -U postgres -c "CREATE DATABASE ${DB_NAME};"
+migr:
+	alembic upgrade head
 stop:
 	docker-compose down
 clear:
