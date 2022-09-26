@@ -337,7 +337,7 @@ def search_scope():
             print("Error: Incorrect inputted data")
 
 
-if __name__ == '__main__':
+def main():
     try:
         # seed_groups()
         # seed_contacts()
@@ -351,5 +351,9 @@ if __name__ == '__main__':
         print(f'Error: {err}')
 
     sys.exit()
+
+
+if __name__ == '__main__':
+    main()
 
 
