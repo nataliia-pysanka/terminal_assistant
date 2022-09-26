@@ -81,6 +81,8 @@ make req
 make up
 # Create database
 make db
+# Make migrations
+make migr
 # Run the script
 python3 main.py -h
 ```
