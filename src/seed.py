@@ -7,12 +7,14 @@ fake = Faker()
 
 
 def seed_groups():
+    """Seeds set of basic groups"""
     groups = ['family', 'friends', 'services', 'job']
     for group in groups:
         add_group(group)
 
 
 def seed_contacts(num: int = 50):
+    """Seed contacts ib data base"""
     groups_id = [group.id for group in get_groups()]
     for _ in range(num):
         first_name = fake.first_name()
