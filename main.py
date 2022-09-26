@@ -9,7 +9,7 @@ import re
 from datetime import datetime
 from src.models import Contact
 from src.seed import seed_groups, seed_contacts
-
+from typing import List
 
 parser = argparse.ArgumentParser(description='ContactBook APP')
 parser.add_argument('--action', '-a',
@@ -35,14 +35,16 @@ birthday = my_arg.get('birth')
 seed = my_arg.get('seed')
 
 
-def input_name(text: str):
+def input_name(text: str) -> str:
+    """Inputs the name/surname of person"""
     while True:
         name = input(f'Input {text} > ')
         if len(name) > 0:
             return name
 
 
-def input_phone():
+def input_phone() -> List[str]:
+    """Inputs the phone number. Could return empty list"""
     numbers = []
     while True:
         num = input('Input phone number (to skip press Enter) > ')
@@ -60,7 +62,8 @@ def input_phone():
     return numbers
 
 
-def input_email():
+def input_email() -> List[str]:
+    """Inputs the email. Could return empty list"""
     emails = []
     while True:
         email = input('Input email (to skip press Enter) > ')
@@ -76,14 +79,16 @@ def input_email():
     return emails
 
 
-def input_adress():
+def input_adress() -> str | None:
+    """Input the adress of person. Could be empty"""
     adress = input('Input adress (to skip press Enter) > ')
     if len(adress) == 0:
         return None
     return adress
 
 
-def input_birth():
+def input_birth() -> datetime:
+    """Input the birthday of person in format '%d.%m.%Y'"""
     while True:
         birth = input("Input birth day '%d.%m.%Y' (to skip press Enter) > ")
         if len(birth) == 0:
@@ -96,7 +101,10 @@ def input_birth():
         return birth
 
 
-def input_group():
+def input_group() -> List[str]:
+    """Input the name of group in which person consist. If there is no group
+    in database with inputted name it will be created.
+    Could return empty list"""
     contact_groups = []
     groups = get_groups()
     group_list = [group.name for group in groups]
@@ -115,6 +123,7 @@ def input_group():
 
 
 def print_contact(item: Contact):
+    """Prints all information about contact"""
     print(f'>>>>> {item.first_name + " " + item.last_name:<60}')
     if item.phones:
         print('PHONES:')
@@ -136,7 +145,8 @@ def print_contact(item: Contact):
     print()
 
 
-def input_data():
+def input_data() -> dict:
+    """Takes information about new contact"""
     contact = {}
     first_name = input_name('first name')
     if first_name:
@@ -178,11 +188,13 @@ def input_data():
 
 
 def create():
+    """Creates new contact"""
     contact = input_data()
     create_contact(**contact)
 
 
-def get_list_by_name():
+def get_list_by_name() -> List[Contact] | None:
+    """Return list of contacts by name without loading joined information"""
     first_name = input('Input first name > ')
     last_name = input('Input last name > ')
     contacts = get_contacts(first_name=first_name, last_name=last_name)
@@ -193,7 +205,8 @@ def get_list_by_name():
     return contacts
 
 
-def clear_dict(dictionary: dict):
+def clear_dict(dictionary: dict) -> dict:
+    """Removes from dictionary keys with empty values"""
     key_lst = [key for key in dictionary if not dictionary[key]]
 
     for key in key_lst:
@@ -202,7 +215,8 @@ def clear_dict(dictionary: dict):
     return dictionary
 
 
-def update():
+def update() -> None:
+    """Updates contact in contact_book"""
     contacts = get_list_by_name()
 
     if not contacts:
@@ -222,6 +236,8 @@ def update():
 
 
 def search_name():
+    """Prints list of contacts by name with joined information like
+    phones, emails, groups"""
     first_name = input('Input first name > ')
     last_name = input('Input last name > ')
     contacts = get_contacts_by_name(first_name=first_name, last_name=last_name)
@@ -232,7 +248,7 @@ def search_name():
         print('Not found')
 
 
-def get_date(str_date: str):
+def get_date(str_date: str) -> datetime:
     """
     Parses the inputted string and returns datetime object
     """
@@ -257,6 +273,7 @@ def get_date(str_date: str):
 
 
 def search_date():
+    """Prints contacts by date of birth"""
     date = input('Input date and month (year if necessary)" > ')
     date = get_date(date)
     if date.year == 1900:
@@ -272,6 +289,7 @@ def search_date():
 
 
 def search_group():
+    """Prints all contacts by group"""
     group_name = input("Input group name > ")
     group = get_contact_by_groups(group=group_name)
     if group:
@@ -282,12 +300,14 @@ def search_group():
 
 
 def list_all():
+    """Prints all contacts"""
     contacts = get_contacts_joined()
     for item in contacts:
         print_contact(item)
 
 
 def remove():
+    """Removes contact(s) by name"""
     contacts = get_list_by_name()
     contacts = [contact.id for contact in contacts]
     if not contacts:
@@ -306,6 +326,7 @@ def remove():
 
 
 def birth_on_date():
+    """Prints contacts by day and month of birth"""
     b_date = get_date(birthday)
 
     day = b_date.day
@@ -319,6 +340,7 @@ def birth_on_date():
 
 
 def action_scope():
+    """Scope of functions for actions"""
     match action:
         case 'create':
             create()
@@ -333,6 +355,7 @@ def action_scope():
 
 
 def search_scope():
+    """Scope of functions for search"""
     match search:
         case 'name':
             search_name()
@@ -345,6 +368,7 @@ def search_scope():
 
 
 def main():
+    """Main point"""
     try:
         if seed:
             seed_groups()
