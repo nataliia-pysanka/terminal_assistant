@@ -22,13 +22,16 @@ parser.add_argument('--birth',
                     const=datetime.now().strftime("%d.%m"),
                     type=str)
 parser.add_argument('--seed',
-                    '-s')
+                    '-se',
+                    nargs='?',
+                    const=50,
+                    type=int)
 arguments = parser.parse_args()
 my_arg = vars(arguments)
 
 action = my_arg.get('action')
 search = my_arg.get('search')
-birthday = my_arg.get('date')
+birthday = my_arg.get('birth')
 seed = my_arg.get('seed')
 
 
@@ -303,8 +306,10 @@ def remove():
 
 
 def birth_on_date():
-    day = datetime.now().day
-    month = datetime.now().month
+    b_date = get_date(birthday)
+
+    day = b_date.day
+    month = b_date.month
     contacts = get_contact_by_date(day, month)
     if contacts:
         for item in contacts:
@@ -343,12 +348,12 @@ def main():
     try:
         if seed:
             seed_groups()
-            seed_contacts()
-        if action:
+            seed_contacts(num=seed)
+        elif action:
             action_scope()
-        if search:
+        elif search:
             search_scope()
-        if birthday:
+        elif birthday:
             birth_on_date()
     except SQLAlchemyError as err:
         print(f'Error: {err}')

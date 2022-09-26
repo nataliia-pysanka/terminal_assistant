@@ -12,9 +12,9 @@ def seed_groups():
         add_group(group)
 
 
-def seed_contacts():
+def seed_contacts(num: int = 50):
     groups_id = [group.id for group in get_groups()]
-    for _ in range(50):
+    for _ in range(num):
         first_name = fake.first_name()
         last_name = fake.last_name()
         phones = [fake.msisdn() for _ in range(randint(1, 3))]
