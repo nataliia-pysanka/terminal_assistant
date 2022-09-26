@@ -82,7 +82,7 @@ make up
 # Create database
 make db
 # Run the script
-make run
+python3 main.py -h
 ```
 
 ### Destroy
