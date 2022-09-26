@@ -21,13 +21,15 @@ parser.add_argument('--birth',
                     nargs='?',
                     const=datetime.now().strftime("%d.%m"),
                     type=str)
-
+parser.add_argument('--seed',
+                    '-s')
 arguments = parser.parse_args()
 my_arg = vars(arguments)
 
 action = my_arg.get('action')
 search = my_arg.get('search')
 birthday = my_arg.get('date')
+seed = my_arg.get('seed')
 
 
 def input_name(text: str):
@@ -339,8 +341,9 @@ def search_scope():
 
 def main():
     try:
-        # seed_groups()
-        # seed_contacts()
+        if seed:
+            seed_groups()
+            seed_contacts()
         if action:
             action_scope()
         if search:
