@@ -1,4 +1,4 @@
-# Terminal assistans
+# Terminal assistans (pure Python, SQLAlchemy, Alembic)
 Create your personal terminal contact book. You could save:
 * name and surname of person
 * list of phone numbers
